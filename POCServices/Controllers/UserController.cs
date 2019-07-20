@@ -47,6 +47,7 @@ namespace POCServices.Controllers
             }
             catch (Exception ex)
             {
+                Logger.Error(ex);
                 restResponse = Response<List<OfficerProfile>>.ReturnFataErrorResponse();
                 restResponse.ResponseData = new List<OfficerProfile>();
                 return restResponse;
@@ -157,6 +158,7 @@ namespace POCServices.Controllers
             }
             catch (Exception ex)
             {
+                Logger.Error(ex);
                 restResponse = Response<List<Role>>.ReturnFataErrorResponse();
                 restResponse.ResponseData = new List<Role>();
                 return restResponse;
@@ -184,6 +186,7 @@ namespace POCServices.Controllers
             }
             catch (Exception ex)
             {
+                Logger.Error(ex);
                 restResponse = Response<List<LanguageInfo>>.ReturnFataErrorResponse();
                 restResponse.ResponseData = new List<LanguageInfo>();
                 return restResponse;
@@ -211,6 +214,7 @@ namespace POCServices.Controllers
             }
             catch (Exception ex)
             {
+                Logger.Error(ex);
                 restResponse = Response<List<Specialization>>.ReturnFataErrorResponse();
                 restResponse.ResponseData = new List<Specialization>();
                 return restResponse;
@@ -251,6 +255,7 @@ namespace POCServices.Controllers
             }
             catch (Exception ex)
             {
+                Logger.Error(ex);
                 restResponse = Response<OfficerProfile>.ReturnFataErrorResponse();
                 restResponse.ResponseData = new OfficerProfile();
                 return restResponse;
