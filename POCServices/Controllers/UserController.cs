@@ -11,7 +11,7 @@ using System.Web.Http;
 
 namespace POCServices.Controllers
 {
-    [RoutePrefix("rest/api")]
+    [RoutePrefix("api")]
     public class UserController : ApiController
     {
         #region constructor
@@ -56,86 +56,31 @@ namespace POCServices.Controllers
 
 
         /// <summary>
-        /// to convert lang and role
+        /// get officer based on window id
         /// </summary>
-        /// <param name="officers"></param>
         /// <returns></returns>
-        [NonAction]
-        private List<OfficerProfile> GetOfficerProfiles(List<OfficerProfile> officers)
+        [Route("officer")]
+        [HttpGet]
+        [LogActionFilter]
+        public RestResponse<OfficerProfileEdit> GetOficer(string windowsId)
         {
-            var lanInfo = repository.GetAll<LanguageInfo>(Constants.LanguageCollection).Result.ToList();
-            var roleInfo = repository.GetAll<Role>(Constants.RoleandDutyCollection).Result.ToList();
-            var result = new List<OfficerProfile>();
-            foreach (var item in officers)
-            {
-                item.LanguagesKnown = GetLanguage(item.LanguagesKnown, lanInfo);
-                item.RoleId = GetRole(item.RoleId, roleInfo);
-                result.Add(item);
-            }
-
-
-            return result;
-        }
-
-        /// <summary>
-        /// to convert language
-        /// </summary>
-        /// <param name="lanCode"></param>
-        /// <param name="lanInfo"></param>
-        /// <returns></returns>
-        [NonAction]
-        private List<string> GetLanguage(List<string> lanCode, List<LanguageInfo> lanInfo)
-        {
-            List<string> result = new List<string>();
-
-            foreach (var item in lanCode)
-            {
-                try
-
-                {
-                    var match = lanInfo.FirstOrDefault(x => x.LanguageId.Equals(item)).LanguageName;
-
-                    result.Add(match);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error("while converting language", ex);
-                    result.Add(item);
-                }
-            }
-
-
-            return result;
-        }
-
-        /// <summary>
-        /// get role name
-        /// </summary>
-        /// <param name="role"></param>
-        /// <param name="roleInfo"></param>
-        /// <returns></returns>
-        [NonAction]
-        private string GetRole(string role, List<Role> roleInfo)
-        {
-
-
-
+            RestResponse<OfficerProfileEdit> restResponse = null;
             try
-
             {
-                var match = roleInfo.FirstOrDefault(x => x.RoleId.Equals(role)).RoleName;
-                return match;
+                var result = repository.Find<OfficerProfile>(Constants.OfficersCollection, x => x.WindowsId.Equals(windowsId) ).Result.ToList();
+
+                restResponse = Response<OfficerProfileEdit>.ReturnSuccessResponse();
+                restResponse.ResponseData = GetOfficerProfileEdit(result.First());
+                return restResponse;
             }
             catch (Exception ex)
             {
-                Logger.Error("while converting language", ex);
-                return role;
+                Logger.Error(ex);
+                restResponse = Response<OfficerProfileEdit>.ReturnFataErrorResponse();
+                restResponse.ResponseData = null;
+                return restResponse;
             }
-
-
-
         }
-
 
 
         /// <summary>
@@ -226,7 +171,7 @@ namespace POCServices.Controllers
         /// </summary>
         /// <param name="officerDetail"></param>
         /// <returns></returns>
-        [Route("Officer")]
+        [Route("Officer/Add")]
         [HttpPost]
         [LogActionFilter]
         public RestResponse<OfficerProfile> AddOfficer(OfficerProfile officerDetail)
@@ -262,5 +207,233 @@ namespace POCServices.Controllers
             }
         }
 
+
+        [Route("Officer/Update")]
+        [HttpPut]
+        [LogActionFilter]
+        public RestResponse<OfficerProfile> UpdateOfficer(OfficerProfile officerDetail)
+        {
+            RestResponse<OfficerProfile> restResponse = null;
+            try
+            {
+                
+                var result = repository.FindOne<OfficerProfile>(Constants.OfficersCollection, x=>x.OfficerId.Equals(officerDetail.OfficerId),"OfficerId").Result;
+                officerDetail._id = result._id;
+
+                var result1 = repository.FindOneAndReplace<OfficerProfile>(Constants.OfficersCollection, x => x.OfficerId.Equals(officerDetail.OfficerId), officerDetail);
+                if (result1.Exception == null)
+                {
+                    restResponse = Response<OfficerProfile>.ReturnSuccessResponse();
+                    restResponse.ResponseData = officerDetail;
+                }
+                else
+                {
+                    restResponse = Response<OfficerProfile>.ReturnFataErrorResponse();
+                    restResponse.ResponseData = new OfficerProfile();
+                }
+                return restResponse;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+                restResponse = Response<OfficerProfile>.ReturnFataErrorResponse();
+                restResponse.ResponseData = new OfficerProfile();
+                return restResponse;
+            }
+        }
+
+        #region Non Action Methods
+
+        /// <summary>
+        /// Convert to officer profile for edit
+        /// </summary>
+        /// <param name="officers"></param>
+        /// <returns></returns>
+        [NonAction]
+        private OfficerProfileEdit GetOfficerProfileEdit(OfficerProfile officers)
+        {
+            try
+            {
+                var lanInfo = repository.GetAll<LanguageInfo>(Constants.LanguageCollection).Result.ToList();
+                var specializationInfo = repository.GetAll<Specialization>(Constants.SpecializationCollection).Result.ToList();
+
+                OfficerProfileEdit result = new OfficerProfileEdit
+                {
+                    WindowsId = officers.WindowsId,
+                    Specialization = GetSppecializationInfo(officers.Specialization, specializationInfo),
+                    FirstName = officers.FirstName,
+                    IsRosterAdministrator = officers.IsRosterAdministrator,
+                    LanguagesKnown = GetLanguageInfo(officers.LanguagesKnown, lanInfo),
+                    LastName = officers.LastName,
+                    OfficerId = officers.OfficerId,
+                    RoleId = officers.RoleId,
+                    Sex = officers.Sex
+                };
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+                return new OfficerProfileEdit();
+            }
+        }
+
+
+
+        /// <summary>
+        /// to convert lang and role
+        /// </summary>
+        /// <param name="officers"></param>
+        /// <returns></returns>
+        [NonAction]
+        public List<OfficerProfile> GetOfficerProfiles(List<OfficerProfile> officers)
+        {
+            var result = new List<OfficerProfile>();
+            try
+            {
+                var lanInfo = repository.GetAll<LanguageInfo>(Constants.LanguageCollection).Result.ToList();
+                var roleInfo = repository.GetAll<Role>(Constants.RoleandDutyCollection).Result.ToList();
+
+                foreach (var item in officers)
+                {
+                    item.LanguagesKnown = GetLanguage(item.LanguagesKnown, lanInfo);
+                    item.RoleId = GetRole(item.RoleId, roleInfo);
+                    result.Add(item);
+                }
+
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+                return result;
+            }
+        }
+
+        /// <summary>
+        /// to convert language
+        /// </summary>
+        /// <param name="lanCode"></param>
+        /// <param name="lanInfo"></param>
+        /// <returns></returns>
+        [NonAction]
+        private List<string> GetLanguage(List<string> lanCode, List<LanguageInfo> lanInfo)
+        {
+            List<string> result = new List<string>();
+
+            foreach (var item in lanCode)
+            {
+                try
+
+                {
+                    var match = lanInfo.FirstOrDefault(x => x.LanguageId.Equals(item)).LanguageName;
+
+                    result.Add(match);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("while converting language", ex);
+                    result.Add(item);
+                }
+            }
+
+
+            return result;
+        }
+
+
+        /// <summary>
+        /// get language whole structure
+        /// </summary>
+        /// <param name="lanCode"></param>
+        /// <param name="lanInfo"></param>
+        /// <returns></returns>
+        [NonAction]
+        private List<LanguageInfo> GetLanguageInfo(List<string> lanCode, List<LanguageInfo> lanInfo)
+        {
+            List<LanguageInfo> result = new List<LanguageInfo>();
+
+            foreach (var item in lanCode)
+            {
+                try
+
+                {
+                    var match = lanInfo.FirstOrDefault(x => x.LanguageId.Equals(item));
+
+                    result.Add(match);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("while converting language", ex);
+                    return new List<LanguageInfo>();
+                }
+            }
+
+
+            return result;
+        }
+
+
+        /// <summary>
+        /// get specializatino info
+        /// </summary>
+        /// <param name="specialCode"></param>
+        /// <param name="lanInfo"></param>
+        /// <returns></returns>
+        [NonAction]
+        private List<Specialization> GetSppecializationInfo(List<string> specialCode, List<Specialization> lanInfo)
+        {
+            List<Specialization> result = new List<Specialization>();
+
+            foreach (var item in specialCode)
+            {
+                try
+
+                {
+                    var match = lanInfo.FirstOrDefault(x => x.SpecializationId.Equals(item));
+
+                    result.Add(match);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("while converting language", ex);
+                    return new List<Specialization>();
+                }
+            }
+
+            return result;
+        }
+
+
+
+        /// <summary>
+        /// get role name
+        /// </summary>
+        /// <param name="role"></param>
+        /// <param name="roleInfo"></param>
+        /// <returns></returns>
+        [NonAction]
+        private string GetRole(string role, List<Role> roleInfo)
+        {
+
+            try
+            {
+                var match = roleInfo.FirstOrDefault(x => x.RoleId.Equals(role)).RoleName;
+                return match;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("while converting language", ex);
+                return role;
+            }
+
+
+
+        }
+
+
+        #endregion
     }
 }

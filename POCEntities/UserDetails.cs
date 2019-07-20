@@ -62,4 +62,33 @@ namespace POCEntities
         public string SpecializationName { get; set; }
         public string SpecializationDescription { get; set; }
     }
+
+    public class OfficerAllocation
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string CareersConnectId { get; set; }
+        public int DayNumber { get; set; }
+        public string WindowsId { get; set; }
+        public string RoleId { get; set; }
+        public string DutyName { get; set; }
+        public string RosterType { get; set; }
+    }
+
+
+    public class OfficerProfileEdit
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string _id { get; set; }
+        public string OfficerId { get; set; }
+        public string WindowsId { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string RoleId { get; set; }
+        public List<Specialization> Specialization { get; set; }
+        public List<LanguageInfo> LanguagesKnown { get; set; }
+        public string Sex { get; set; }
+        public bool IsRosterAdministrator { get; set; }
+    }
 }
