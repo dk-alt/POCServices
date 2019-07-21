@@ -67,7 +67,7 @@ namespace POCServices.Controllers
             RestResponse<OfficerProfileEdit> restResponse = null;
             try
             {
-                var result = repository.Find<OfficerProfile>(Constants.OfficersCollection, x => x.WindowsId.Equals(windowsId) ).Result.ToList();
+                var result = repository.Find<OfficerProfile>(Constants.OfficersCollection, x => x.WindowsId.Equals(windowsId)).Result.ToList();
 
                 restResponse = Response<OfficerProfileEdit>.ReturnSuccessResponse();
                 restResponse.ResponseData = GetOfficerProfileEdit(result.First());
@@ -179,9 +179,16 @@ namespace POCServices.Controllers
             RestResponse<OfficerProfile> restResponse = null;
             try
             {
-                var latestRecord = repository.CollectionCount<OfficerProfile>(Constants.OfficersCollection, x => x.OfficerId != null).Result;
 
-                var officersID = Constants.OfficerIdPrefix + (latestRecord + 1).ToString("D" + 4);
+                var latestRecord = repository.FindOne<OfficerProfile>(Constants.OfficersCollection, x => x.OfficerId != null, "OfficerId").Result;
+
+
+                string[] temp = latestRecord.OfficerId.Split(new string[] { "OFCR" }, StringSplitOptions.None);
+
+                var latestCount = Convert.ToInt16(temp[1]);
+
+
+                var officersID = Constants.OfficerIdPrefix + (latestCount + 1).ToString("D" + 4);
 
                 officerDetail.OfficerId = officersID;
                 var result = repository.InsertOne(Constants.OfficersCollection, officerDetail);
@@ -216,8 +223,8 @@ namespace POCServices.Controllers
             RestResponse<OfficerProfile> restResponse = null;
             try
             {
-                
-                var result = repository.FindOne<OfficerProfile>(Constants.OfficersCollection, x=>x.OfficerId.Equals(officerDetail.OfficerId),"OfficerId").Result;
+
+                var result = repository.FindOne<OfficerProfile>(Constants.OfficersCollection, x => x.OfficerId.Equals(officerDetail.OfficerId), "OfficerId").Result;
                 officerDetail._id = result._id;
 
                 var result1 = repository.FindOneAndReplace<OfficerProfile>(Constants.OfficersCollection, x => x.OfficerId.Equals(officerDetail.OfficerId), officerDetail);
@@ -241,6 +248,37 @@ namespace POCServices.Controllers
                 return restResponse;
             }
         }
+
+        [Route("Officer/Delete")]
+        [HttpPut]
+        [LogActionFilter]
+        public RestResponse<OfficerProfile> UpdateDelete(List<string> officerDetail)
+        {
+            RestResponse<OfficerProfile> restResponse = null;
+            try
+            {
+                foreach (var item in officerDetail)
+                {
+                    repository.FindOneAndDelete<OfficerProfile>(Constants.OfficersCollection, x => x.OfficerId.Equals(item));
+
+                }
+
+                restResponse = Response<OfficerProfile>.ReturnSuccessResponse();
+                restResponse.ResponseData = null;
+
+
+                return restResponse;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+                restResponse = Response<OfficerProfile>.ReturnFataErrorResponse();
+                restResponse.ResponseData = new OfficerProfile();
+                return restResponse;
+            }
+        }
+
+
 
         #region Non Action Methods
 
